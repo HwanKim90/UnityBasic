@@ -26,30 +26,23 @@ public class PlayerCtrl : MonoBehaviour
     public PlayerAnim playerAnim;
 
     private Animation anim;
+    private float trunSpeed = 0.0f;
 
-    // awake는 스크립트가 비활성화되도 호출됨
-    void Awake() 
-    {   
-       
-    }
+    private float initHP = 100.0f;
+    private float currHP = 100.0f;
 
-    void OnEnable() 
-    {
-
-    }
+    // 델리게이트 (Delegate : 대리자) 함수를 대리한다? 함수를 저장한다
+    public delegate void PlayerDieHandler();
+    // 이벤트 정의
+    public static event PlayerDieHandler OnPlayerDie; 
     
-    // start 함수 코루틴으로 설정가능
-    // IEnumerator Start()
-    // {
-    //     // logic a
-    //     yield return new WaitForSeconds(0.1f);
-    //     // logic b
-    // }
-
-    void Start() 
+    IEnumerator Start() 
     {
         anim = this.gameObject.GetComponent<Animation>();
         anim.Play(playerAnim.idle.name);
+
+        yield return new WaitForSeconds(0.2f);
+        trunSpeed = 100.0f;
     }
 
     // 화면을 랜더링 하는 주기
@@ -75,7 +68,7 @@ public class PlayerCtrl : MonoBehaviour
         Vector3 dir = (Vector3.forward * v) + (Vector3.right * h);
 
         transform.Translate(dir.normalized * moveSpeed * Time.deltaTime);
-        transform.Rotate(Vector3.up * Time.deltaTime * 100.0f * r);
+        transform.Rotate(Vector3.up * Time.deltaTime * trunSpeed * r);
 
         if (v >= 0.1f) 
         {
@@ -104,16 +97,34 @@ public class PlayerCtrl : MonoBehaviour
 
     }
 
-    // 물리엔진의 계산 주기
-    void FixedUpdate()
-    {   
-
-    }
-
-    void LateUpdate() 
+    void OnTriggerEnter(Collider coll) 
     {
-        // x 후처리 작업
+        if (currHP > 0.0f && coll.CompareTag("PUNCH"))
+        {
+            currHP -= 10.0f;
+            if (currHP <= 0.0f) 
+            {
+                PlayerDie();
+            }
+        }
     }
 
-    
+    void PlayerDie()
+    {
+        // 이벤트 발생(Event Raised)
+        OnPlayerDie();
+
+        GameManager.instance.IsGameOver = true;
+
+        //GameObject.Find("GameManager").GetComponent<GameManager>().IsGameOver = true;
+
+        // GameObject[] monsters = GameObject.FindGameObjectsWithTag("MONSTER");
+        // foreach (var monster in monsters)
+        // {
+        //     //monster.GetComponent<MonsterCtrl>().YouWin();
+        //     // YouWin이라는 함수가 없으면 리턴 받지 않겟다 -> SendMessageOptions.DontRequireReceiver
+        //     monster.SendMessage("YouWin", SendMessageOptions.DontRequireReceiver);
+        // }
+    }
+
 }
